@@ -86,6 +86,7 @@
     <button id="encrypt">Encrypt</button>
     <button id="add-public-key">Add Public Key</button>
     <button id="add-private-key">Add Private Key</button>
+    <button id="copy-btn">Copy Output</button>
 
     <script>
       const $ = (query) => document.querySelector(query);
@@ -138,30 +139,28 @@
       }
 
       function getBase64(file) {
-        const matcher = /data:application\/[a-zA-Z0-9-]+;base64,(.+)/;
+        const matcher = /^data:[^/]+\/[^;]+;base64,(.+)$/;
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.readAsDataURL(file);
-          let data = "";
-          let isPrefixed = true;
-          let i = 0;
-          reader.onload = function () {
-            console.log("onload: " + i + ", " + reader.result);
-            if (isPrefixed) {
-              data = data + matcher.exec(reader.result)[1];
-              isPrefixed = false;
-            } else {
-              data = data + reader.result;
-            }
-          };
-          reader.onloadend = function () {
-            resolve(data);
+          reader.onload = () => {
+            resolve(matcher.exec(reader.result)[1]);
           };
           reader.onerror = function (error) {
             reject("Error: ", error);
           };
         });
       }
+
+      function copyOutput() {
+        const outputEl = $("#output");
+        const text = outputEl.textContent;
+        navigator.clipboard.writeText(text);
+      }
+
+      $("#copy-btn").addEventListener("click", () => {
+        copyOutput();
+      });
 
       $("#encrypt").addEventListener("click", () => {
         Promise.all([getContent(), getPrivateKey()])
