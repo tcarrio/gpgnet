@@ -129,11 +129,11 @@
       function getContent() {
         return new Promise((resolve, reject) => {
           let data = null;
-          const fileEl = $("#thefile");
-          if (fileEl.files.length > 0) {
-            resolve(getBase64($('input[type="file"]').files[0]));
+          const textInput = $(".message textarea");
+          if (textInput.value) {
+            resolve(btoa(textInput.value));
           } else {
-            resolve($(".message textarea").value);
+            resolve(getBase64($('input[type="file"]').files[0]));
           }
         });
       }
