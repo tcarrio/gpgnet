@@ -5,12 +5,39 @@
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
     <meta content="utf-8" http-equiv="encoding" />
     <script src="openpgp.min.js"></script>
+    
     <style type="text/css">
+      :root {
+        --c0: #22223b;
+        --c1: #4a4e69;
+        --c2: #9a8c98;
+        --c3: #c9ada7;
+        --c4: #f2e9e4;
+
+        --bg: var(--c0);
+        --fg: var(--c4);
+        --link: var(--c3);
+      }
+      
+      body {
+        font-size: 20px;
+        color: var(--fg);
+        background-color: var(--bg);
+      }
+
+      a {
+        color: var(--link);
+      }
+
       body,
       button,
-      textarea,
-      pre {
+      textarea {
         font-family: Consolas;
+      }
+
+      pre,
+      textarea {
+        font-family: monospace;
       }
 
       textarea {
@@ -48,46 +75,130 @@
       }
 
       .hint {
-        font-size: 0.7rem;
+        font-size: 0.8rem;
         margin: 0;
-        color: gray;
+        color: var(--c3);
+      }
+
+      article {
+        display: flex;
+        flex-direction: column;
+      }
+
+      article > * {
+        flex-grow: 0;
+      }
+
+      html, body {
+        margin: 0px;
+      }
+
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      body > * {
+        flex-grow: 1;
+      }
+
+      article {
+        margin: 1rem;
+      }
+
+      article > section {
+        margin-bottom: 1rem;
+      }
+
+      #output-section {
+        flex-grow: 1;
+      }
+
+      textarea, button {
+        background-color: var(--c1);
+        color: var(--c4);
+      }
+
+      textarea {
+        min-height: 16vh;
+        min-width: 32rem;
+        max-width: 100vw;
+      }
+
+      #output {
+        padding: 1rem;
+        color: var(--bg);
+        background-color: var(--c2);
+        max-width: 29rem;
+      }
+
+      #output:empty {
+        display: none;
       }
     </style>
   </head>
   <body>
-    <h1>GPG Online</h1>
+    <article>
+      <header>
+        <h1>GPG Online</h1>
+      </header>
 
-    <div class="message">
-      <h2>File/Message to encrypt</h2>
-      <input type="file" id="thefile" name="thefile" />
-      <br />
-      <textarea rows="5"></textarea>
-    </div>
+      <section>
+        <div class="message">
+          <h2>File/Message to encrypt</h2>
+          <input type="file" id="the-file" name="the-file" />
+          <br />
+          <textarea rows="5"></textarea>
+        </div>
+      </section>
 
-    <div id="public-keys">
-      <div class="public-key">
-        <h2>Public key</h2>
-        <p class="hint">
-          Only the person who has a private key will be able to decrypt the
-          message.
-        </p>
-        <textarea rows="5"></textarea>
-      </div>
-    </div>
+      <section>
+        <div id="public-keys">
+          <div class="public-key">
+            <h2>Public key</h2>
+            <p class="hint">
+              Only the person who has a private key will be able to decrypt the
+              message.
+            </p>
+            <textarea rows="5"></textarea>
+          </div>
+        </div>
+      </section>
 
-    <div id="private-key">
-      <h2>Private Key</h2>
-      <textarea rows="5"></textarea>
-      <h2>Passphrase</h2>
-      <textarea rows="2"></textarea>
-    </div>
+      <section>
+        <div id="private-key">
+          <h2>Private Key</h2>
+          <textarea rows="5"></textarea>
+          <h2>Passphrase</h2>
+          <textarea rows="2"></textarea>
+        </div>
+      </section>
+      <section>
+        <div id="button-row">
+          <button id="encrypt">Encrypt</button>
+          <button id="add-public-key">Add Public Key</button>
+          <button id="add-private-key">Add Private Key</button>
+          <button id="copy-btn">Copy</button>
+          <button id="dl-btn">Download</button>
+        </div>
+      </section>
 
-    <pre id="output"></pre>
-    <button id="encrypt">Encrypt</button>
-    <button id="add-public-key">Add Public Key</button>
-    <button id="add-private-key">Add Private Key</button>
-    <button id="copy-btn">Copy Output</button>
+      <section id="output-section">
+        <pre id="output"></pre>
+      </section>
 
+      <footer>
+          <p>
+            This page uses industry vetted open source
+            <a href="https://github.com/openpgpjs/openpgpjs">OpenPGP.js</a> and
+            does not submit anything to the server. Everything happens in your
+            browser and is completely lost when you close this page.
+          </p>
+      </footer>
+    </article>
+
+    <!-- END OF CONTENT -->
     <script>
       const $ = (query) => document.querySelector(query);
       const queryAll = (query) =>
@@ -152,11 +263,38 @@
         });
       }
 
-      function copyOutput() {
+      function getOutput() {
         const outputEl = $("#output");
-        const text = outputEl.textContent;
+        return outputEl.textContent || "";
+      }
+
+      function copyOutput() {
+        const text = getOutput();
         navigator.clipboard.writeText(text);
       }
+
+      $("#dl-btn").addEventListener("click", () => {
+        const text = getOutput();
+        const file = new Blob([text]);
+        const filename = "encrypted.txt.b64.gpg";
+
+        // Support for IE10+ like a mad man
+        if (window.navigator.msSaveOrOpenBlob) {
+          window.navigator.msSaveOrOpenBlob(file, filename);
+        } else {
+          const a = document.createElement("a"),
+            url = URL.createObjectURL(file);
+          a.href = url;
+          a.download = filename;
+          a.style = "display: none";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, 0);
+        }
+      });
 
       $("#copy-btn").addEventListener("click", () => {
         copyOutput();
@@ -174,19 +312,13 @@
               armor: true,
             };
 
+            const outputElement = $("#output");
             return openpgp.encrypt(options).then((results) => {
-              $("#output").innerHTML = results.data;
+              outputElement.innerHTML = results.data;
             });
           })
           .catch((err) => alert(err.message));
       });
     </script>
-
-    <p>
-      This page uses industry vetted open source
-      <a href="https://github.com/openpgpjs/openpgpjs">OpenPGP.js</a> and does
-      not submit anything to the server. Everything happens in your browser and
-      is completely lost when you close this page.
-    </p>
   </body>
 </html>
